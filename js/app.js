@@ -16,7 +16,7 @@ let cleanup = null;
 
 /* 首页 */
 function home() {
-  const hero = h('div', 'hero'), txt = h('div', 'hero-txt', `<h1>不会考的，<br>先剪掉。</h1><p class="soft">算法设计与分析期末刷题。${real.length} 套往年卷 ${Q.length - ofSet('ex').length} 题，加 ${ofSet('ex').length} 道补充练习，按考频排好先后。答案重新核对过，原答案里发现的错误用红色标出。</p>`);
+  const hero = h('div', 'hero'), txt = h('div', 'hero-txt', `<h1>算法考试速成</h1><p class="soft">算法设计与分析期末，不会考的先剪掉。${real.length} 套往年卷 ${Q.length - ofSet('ex').length} 题，加 ${ofSet('ex').length} 道补充练习，按考频排好先后。答案重新核对过，原答案里发现的错误用红色标出。</p>`);
   const r = h('div', 'row'); r.append(link('#/learn/knapsack', '从必考点学起', 'btn pri'), link('#/feed', '直接随机刷')); txt.append(r);
   const demo = h('div', 'demo'), box = h('div', 'scroll'), cap = h('div', 'say'); demo.append(h('p', 'small soft', '2022–2023 第三题：重量 1、2、3，价值 6、10、12，容量 5'), box, cap); hero.append(txt, demo); main.append(hero); heroTree(box, cap);
   const p = store.progress(Q), errs = Q.filter(q => q.err).length;
@@ -135,7 +135,7 @@ function route() {
   if (location.hash && !location.hash.startsWith('#/')) return; // 跳转正文等普通锚点
   cleanup?.(); cleanup = null; const [p = '', id] = location.hash.replace(/^#\//, '').split('/'); main.replaceChildren(); (Object.hasOwn(R, p) ? R[p] : notFound)(id);
   const nav = { topic: 'topics', set: 'sets', errata: 'wrong' }[p] || p; document.querySelectorAll('[data-nav]').forEach(a => a.dataset.nav === nav ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
-  const t = main.querySelector('h1')?.textContent; document.title = p ? `${t} · 剪枝` : '剪枝 · 算法期末刷题'; scrollTo(0, 0);
+  const t = main.querySelector('h1')?.textContent; document.title = p ? `${t} · 算法考试速成` : '算法考试速成'; scrollTo(0, 0);
 }
 addEventListener('hashchange', route);
 document.getElementById('theme').onclick = () => { const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; try { localStorage.setItem('prune.theme', r.dataset.theme); } catch { /* 忽略 */ } };

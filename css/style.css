@@ -30,7 +30,7 @@ mark{background:linear-gradient(transparent 45%,var(--hl) 45%);color:inherit}
 
 .top{position:sticky;top:0;z-index:10;background:var(--paper);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
 .top-in{display:flex;align-items:center;gap:20px;min-height:56px}
-.brand{font:700 1.4rem/1 var(--song);color:var(--ink);text-decoration:none;letter-spacing:.06em}
+.brand{font:700 1.3rem/1 var(--song);color:var(--ink);text-decoration:none;letter-spacing:.04em;white-space:nowrap}
 .nav{display:flex;gap:4px;margin-left:auto}
 .nav a{color:var(--soft);text-decoration:none;padding:8px 12px;border-radius:4px}
 .nav a:hover{color:var(--ink);background:var(--wash)}
