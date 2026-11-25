@@ -23,7 +23,7 @@ export function renderQ(q, { mode = 'instant', compact = false, index = 0, onDon
   const el = h('section', 'q' + (compact ? ' compact' : '')); const id = 'q' + (++uid);
   let picked = -1, inputs = [], revealed = false, result = null;
   const head = h('div', 'q-h');
-  head.append(h('span', '', `${index ? `<b class="num">${index}</b>　` : ''}${setName[q.set]} ${q.no}`), ...(q.no.includes(q.kind || KIND[q.type]) ? [] : [h('span', 'kind', q.kind || KIND[q.type])]));
+  head.append(h('span', '', `${index ? `<b class="num">${index}</b>　` : ''}${setName[q.set]}${q.no === '补充' ? '' : ' ' + q.no}`), ...(q.no.includes(q.kind || KIND[q.type]) ? [] : [h('span', 'kind', q.kind || KIND[q.type])]));
   if (q.pts) head.append(h('span', '', `${q.pts} 分`));
   for (const t of q.t) { const a = h('a', '', topicName[t]); a.href = `#/learn/${t}`; head.append(a); }
   const st = h('span'); const paint = () => { const s = store.status(q.id); st.className = s ? 'st-' + s : ''; st.textContent = s ? ST[s] : ''; };
