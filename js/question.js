@@ -1,7 +1,8 @@
 import * as store from './store.js';
-import { SETS } from './data/questions.js';
+import { SETS, sid } from './data/questions.js';
 import { TOPICS } from './data/topics.js';
 import { mountDemo } from './demos.js';
+import { icon, burst } from './art.js';
 
 export const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 const setName = Object.fromEntries(SETS.map(s => [s.id, s.name]));
@@ -26,16 +27,16 @@ export function renderQ(q, { mode = 'instant', compact = false, index = 0, onDon
   head.append(h('span', '', `${index ? `<b class="num">${index}</b>　` : ''}${setName[q.set]}${q.no === '补充' ? '' : ' ' + q.no}`), ...(q.no.includes(q.kind || KIND[q.type]) ? [] : [h('span', 'kind', q.kind || KIND[q.type])]));
   if (q.pts) head.append(h('span', '', `${q.pts} 分`));
   for (const t of q.t) { const a = h('a', '', topicName[t]); a.href = `#/learn/${t}`; head.append(a); }
-  const st = h('span'); const paint = () => { const s = store.status(q.id); st.className = s ? 'st-' + s : ''; st.textContent = s ? ST[s] : ''; };
+  const st = h('span'); const paint = () => { const s = store.status(sid(q)); st.className = s ? 'st-' + s : ''; st.textContent = s ? ST[s] : ''; };
   paint(); head.append(st);
   const star = h('button', 'star'); star.type = 'button';
-  const ps = () => { const on = store.starred(q.id); star.setAttribute('aria-pressed', on); star.textContent = on ? '★ 已收藏' : '☆ 收藏'; };
-  star.onclick = () => { store.toggleStar(q.id); ps(); }; ps(); head.append(star);
+  const ps = () => { const on = store.starred(sid(q)); star.setAttribute('aria-pressed', on); star.innerHTML = `${icon('star')}<span>${on ? '已收藏' : '收藏'}</span>`; };
+  star.onclick = () => { store.toggleStar(sid(q)); ps(); }; ps(); head.append(star);
   const body = h('div', 'q-b rich'); let k = 0;
   body.innerHTML = q.type === 'fill' ? q.q.replace(/___/g, () => `<input class="blank" id="${id}-${k}" autocomplete="off" autocapitalize="off" aria-label="第 ${++k} 空">`) : q.q;
   el.append(head, body);
 
-  const mark = s => { store.setStatus(q.id, s); paint(); result = s; onDone?.(s); };
+  const mark = s => { store.setStatus(sid(q), s); paint(); result = s; onDone?.(s); };
   const go = h('button', 'btn pri', q.type === 'open' ? '看答案' : '核对'); go.type = 'button';
 
   if (q.type === 'choice') {
@@ -62,17 +63,17 @@ export function renderQ(q, { mode = 'instant', compact = false, index = 0, onDon
     if (q.type === 'choice') {
       objective = picked === q.a;
       [...el.querySelectorAll('.opt')].forEach((b, i) => { b.disabled = true; b.classList.remove('sel');
-        if (i === q.a) { b.classList.add('ok'); b.append(h('span', 'tag', '正确答案')); } else if (i === picked) { b.classList.add('no'); b.append(h('span', 'tag', '你选的')); } });
-      ans.append(h('p', 'ver ' + (objective ? 'ok' : 'no'), objective ? '√ 答对了' : picked < 0 ? `× 未作答，答案 ${'ABCD'[q.a]}` : `× 答案是 ${'ABCD'[q.a]}`));
+        if (i === q.a) { b.classList.add('ok'); b.append(h('span', 'tag', icon('check') + '正确')); } else if (i === picked) { b.classList.add('no'); b.append(h('span', 'tag', icon('cross') + '你选的')); } });
+      if (objective && mode === 'instant') { const r = el.querySelectorAll('.opt')[q.a].getBoundingClientRect(); burst(r.right - 40, r.top + r.height / 2); }
+      ans.append(h('p', 'ver ' + (objective ? 'ok' : 'no'), objective ? '答对了' : picked < 0 ? `未作答，答案 ${'ABCD'[q.a]}` : `答案是 ${'ABCD'[q.a]}`));
     } else if (q.type === 'fill') {
       const r = checkFill(q, inputs.map(x => x.value)); objective = r.every(Boolean);
       inputs.forEach((x, i) => { x.readOnly = true; x.classList.add(r[i] ? 'ok' : 'no'); });
-      ans.append(h('p', 'ver ' + (objective ? 'ok' : 'no'), (objective ? '√ 答对了' : '× 答案：' + q.a.map(a => a[0]).join('；'))));
+      ans.append(h('p', 'ver ' + (objective ? 'ok' : 'no'), (objective ? '答对了' : '答案：' + q.a.map(a => a[0]).join('；'))));
     } else ans.append(h('div', 'rich', q.a));
-    if (q.err) ans.append(h('p', 'note err', '更正：' + q.err));
-    if (q.doubt) ans.append(h('p', 'note doubt', '存疑：' + q.doubt));
     if (q.ex) ans.append(h('div', 'ex rich', q.ex));
     if (q.demo) { const b = h('button', 'btn', '一步步演示'); b.type = 'button'; const r = h('div', 'row'); r.append(b); b.onclick = () => { r.replaceWith(mountDemo(q.demo)); }; ans.append(r); }
+    if (objective === false) el.classList.add('shake');
     if (objective !== null) mark(objective ? 'ok' : 'no');
     if (q.type === 'open' || (q.type === 'fill' && !objective)) {
       const s = h('div', 'self'); s.append(h('span', 'small soft', q.type === 'fill' ? '意思对也算对：' : '自评：'));

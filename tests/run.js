@@ -1,4 +1,4 @@
-import { Q, SETS } from '../js/data/questions.js';
+import { Q, CORE, SETS } from '../js/data/questions.js';
 import { TOPICS } from '../js/data/topics.js';
 import * as A from '../js/algos.js';
 import { plan, today } from '../js/visitors.js';
@@ -8,14 +8,14 @@ const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), `${m}: ${JSO
 // 数据完整性
 const ids = new Set(), tids = new Set(TOPICS.map(t => t.id)), sids = new Set(SETS.map(s => s.id));
 for (const q of Q) {
-  ok(!ids.has(q.id), 'dup ' + q.id); ids.add(q.id); ok(sids.has(q.set), 'set ' + q.id); ok(q.t.length && q.t.every(t => tids.has(t)), 'topic ' + q.id);
+  ok(!q.err && !q.doubt, 'err ' + q.id); ok(!q.same || Q.some(x => x.id === q.same && !x.same), 'same ' + q.id); ok(!/原答案|更正|存疑|原卷|有争议|参考解答/.test(JSON.stringify(q)), 'wording ' + q.id); ok(!ids.has(q.id), 'dup ' + q.id); ids.add(q.id); ok(sids.has(q.set), 'set ' + q.id); ok(q.t.length && q.t.every(t => tids.has(t)), 'topic ' + q.id);
   if (q.type === 'choice') ok(q.opts.length === 4 && q.a >= 0 && q.a < 4, 'choice ' + q.id);
   if (q.type === 'fill') ok((q.q.match(/___/g) || []).length === q.a.length, 'blank ' + q.id);
   if (q.type === 'open') ok(typeof q.a === 'string', 'open ' + q.id);
   for (const h of [q.q, q.type === 'open' ? q.a : '', q.ex || '']) for (const tag of ['p', 'b', 'mark', 'pre', 'code', 'table', 'tr', 'td', 'th', 'ul', 'ol', 'li', 'div'])
     ok((h.match(new RegExp(`<${tag}[ >]`, 'g')) || []).length === (h.match(new RegExp(`</${tag}>`, 'g')) || []).length, `tag ${tag} ${q.id}`);
 }
-for (const t of TOPICS) { ok(t.eg.every(e => ids.has(e)), 'eg ' + t.id); ok(Q.some(q => q.t.includes(t.id)), 'empty ' + t.id);
+for (const t of TOPICS) { ok(t.eg.every(e => ids.has(e) && CORE.some(q => q.id === e)), 'eg ' + t.id); ok(Q.some(q => q.t.includes(t.id)), 'empty ' + t.id);
   for (const [, h] of t.steps) for (const tag of ['p', 'b', 'mark', 'pre', 'code', 'table', 'tr', 'td', 'th', 'ul', 'ol', 'li', 'div']) ok((h.match(new RegExp(`<${tag}[ >]`, 'g')) || []).length === (h.match(new RegExp(`</${tag}>`, 'g')) || []).length, `tag ${tag} ${t.id}`); }
 // 背包：与暴力对比
 const brute = (w, v, C) => { let m = 0; for (let k = 0; k < 1 << w.length; k++) { let a = 0, b = 0; w.forEach((x, i) => { if (k >> i & 1) { a += x; b += v[i]; } }); if (a <= C) m = Math.max(m, b); } return m; };
@@ -50,5 +50,5 @@ const V = { host: 'felixovo06.github.io', webdriver: false, nocount: '', lastDay
 eq(plan(V), { visit: true, person: true }, 'first visit'); eq(plan({ ...V, lastDay: '2026-11-25', seen: '1' }), { visit: false, person: false }, 'same day'); eq(plan({ ...V, lastDay: '2026-11-24', seen: '1' }), { visit: true, person: false }, 'next day');
 for (const x of [{ host: 'localhost' }, { webdriver: true }, { nocount: '1' }]) eq(plan({ ...V, ...x }), { visit: false, person: false }, 'skip');
 eq(today(new Date(2026, 0, 5)), '2026-01-05', 'today');
-console.log(`${n} checks, ${bad} failed; 题 ${Q.length}（真题 ${Q.filter(q => q.set !== 'ex').length}），知识点 ${TOPICS.length}，更正 ${Q.filter(q => q.err).length}，存疑 ${Q.filter(q => q.doubt).length}`);
+console.log(`${n} checks, ${bad} failed; 题 ${Q.length}（去重 ${CORE.length}），知识点 ${TOPICS.length}`);
 process.exit(bad ? 1 : 0);

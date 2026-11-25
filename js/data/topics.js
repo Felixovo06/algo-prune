@@ -1,6 +1,6 @@
 // 知识点：按复习优先级排列。tier: 1 必考 2 高频 3 常考 4 选看
 // steps=讲解段落 [标题, HTML]；memo=速记卡；demo=交互演示 id；eg=例题题号（先例题后练习）
-export const TOPICS = [
+const LIST = [
 { id: 'knapsack', name: '0-1 背包', tier: 1, one: '三年都考，单题最高 20 分。形式化、解空间树、bound、活结点表是一条龙。',
   steps: [
     ['问题是什么', '<p>n 个物品，重量 wᵢ、价值 vᵢ，背包容量 C。每个物品<mark>要么整个装、要么不装</mark>，求总价值最大。</p><pre><code>max Σ vᵢxᵢ        目标函数\nΣ wᵢxᵢ ≤ C        约束\nxᵢ ∈ {0,1}, 1≤i≤n</code></pre><p>考“形式化描述”就写这三行，只写文字会扣分。</p>'],
@@ -19,7 +19,7 @@ export const TOPICS = [
     ['贪心选择性质的证明', '<p>要证：频率最小的 x、y 可以是最深的一对兄弟。思路是<mark>交换论证</mark>：</p><ol><li>取最优树 T，a、b 是最深的兄弟叶子。</li><li>交换 x 和 a，代价变化 [f(a)−f(x)]·[d(a)−d(x)] ≥ 0，没变差。</li><li>再交换 y 和 b，也没变差。</li><li>新树不比最优树差，所以也最优。</li></ol><p>最容易写反的是 <b>d(a) ≥ d(x)</b>：a 是最深的。</p>'],
   ],
   memo: ['每次合并权值最小的两棵，n 个字符合并 n−1 次', '总代价 = 所有内部结点权值之和', '证明关键：f(a)≥f(x)，d(a)≥d(x)，所以 B(T)−B(T′)=[f(a)−f(x)][d(a)−d(x)]≥0'],
-  demo: 'huffman', eg: ['s21-z3a', 's23-z2b', 'ex-15'] },
+  demo: 'huffman', eg: ['s21-z3a', 's23-z2b', 'nt-7', 'qa-p6'] },
 
 { id: 'divide', name: '分治与递归方程', tier: 1, one: '合并排序推导和二分搜索代码几乎必有一题，送分题。',
   steps: [
@@ -29,7 +29,7 @@ export const TOPICS = [
     ['排序对比', '<div class="tbl"><table><tr><th></th><th>最好</th><th>平均</th><th>最坏</th></tr><tr><th>合并</th><td>n log n</td><td>n log n</td><td>n log n</td></tr><tr><th>快速</th><td>n log n</td><td>n log n</td><td><b>n²</b></td></tr><tr><th>冒泡/插入</th><td>n</td><td>n²</td><td>n²</td></tr></table></div>'],
   ],
   memo: ['合并排序 T(n)=2T(n/2)+n → O(n log n)，除以 n 再累加', '二分 T(n)=T(n/2)+1 → O(log n)', '快排平均 O(n log n)，最坏 O(n²)'],
-  eg: ['s22-2', 's23-z1', 's23-j1'] },
+  eg: ['s22-2', 's23-z1', 'sb-j2', 'qb-d9', 'sc-z2'] },
 
 { id: 'bnb', name: '分支限界法', tier: 1, one: '和回溯法的异同是固定简答题；活结点表是背包大题的最后一问。',
   steps: [
@@ -39,7 +39,7 @@ export const TOPICS = [
     ['与回溯法比较', '<div class="tbl"><table><tr><th></th><th>回溯</th><th>分支限界</th></tr><tr><th>目标</th><td>所有解</td><td>一个解或最优解</td></tr><tr><th>方式</th><td>深度优先</td><td>广度优先 / 最小耗费优先</td></tr><tr><th>扩展</th><td>多次成为活结点</td><td>一次机会</td></tr><tr><th>空间</th><td>小</td><td>大</td></tr></table></div>'],
   ],
   memo: ['四点对比：求解目标、搜索方式、扩展方式、存储空间', '分支限界：一次生成所有孩子，活结点只有一次扩展机会', '优先队列式解背包：最大堆，优先级取上界'],
-  demo: 'knap22', eg: ['s21-j2', 's22-3c', 's23-c8'] },
+  demo: 'knap22', eg: ['s21-j2', 's22-3c', 'sb-j3', 's23-c8'] },
 
 { id: 'backtrack', name: '回溯法', tier: 1, one: '深度优先 + 剪枝，背包大题的主力算法。',
   steps: [
@@ -59,7 +59,7 @@ export const TOPICS = [
     ['矩阵连乘', '<pre><code>m[i][j] = 0                                              i = j\nm[i][j] = min{ m[i][k] + m[k+1][j] + p[i-1]·p[k]·p[j] }   i ≤ k &lt; j</code></pre><p>按链长从小到大（沿对角线）填表，时间 O(n³)，空间 O(n²)。</p>'],
   ],
   memo: ['动态规划：最优子结构 + 重叠子问题；自底向上', '四步：刻画最优解结构 → 递归定义最优值 → 自底向上算最优值 → 构造最优解', '矩阵连乘按链长填表，O(n³)'],
-  eg: ['s22-4', 's21-j4', 'ex-8'] },
+  eg: ['s22-4', 's21-j4', 'qa-j3'] },
 
 { id: 'lcs', name: '最长公共子序列', tier: 2, one: '填表题，规则固定，练一遍就会。',
   steps: [
@@ -71,6 +71,37 @@ export const TOPICS = [
   memo: ['相等：左上+1；不等：上、左取大', 'LCS 递归式要写边界 c=0（i=0 或 j=0）', '时间 O(mn)'],
   demo: 'lcs21', eg: ['s21-z1b', 's21-z1a', 'ex-10'] },
 
+{ id: 'dpcase', name: '动态规划经典题', tier: 2, one: '矩阵连乘、最大子段和、编辑距离、最长上升子序列、三角剖分。',
+  steps: [
+    ['矩阵连乘', '<p>按链长填表，写出每个 m[i][j] 的比较过程。</p><pre><code>m[i][j] = min{ m[i][k] + m[k+1][j] + p[i-1]·p[k]·p[j] }   i ≤ k &lt; j</code></pre><p>时间 <mark>O(n³)</mark>，空间 O(n²)。凸多边形三角剖分同型。</p>'],
+    ['最大子段和', '<pre><code>b[j] = max( b[j-1] + a[j], a[j] )\n答案 = max b[j]</code></pre><p>动态规划 O(n)，分治 O(n log n)。</p>'],
+    ['编辑距离', '<pre><code>d[i][j] = min{ d[i-1][j-1] + (aᵢ≠bⱼ), d[i-1][j]+1, d[i][j-1]+1 }</code></pre><p>边界 d[i][0]=i，d[0][j]=j。O(mn)。</p>'],
+    ['最长上升子序列', '<pre><code>f(i) = max{ f(j)+1 : j&lt;i 且 a[j]&lt;a[i] }，没有则为 1</code></pre><p>O(n²)。</p>'],
+    ['0-1 背包', '<pre><code>m(i,j) = max{ m(i+1,j), m(i+1,j-wi)+vi }   j ≥ wi\nm(i,j) = m(i+1,j)                          j &lt; wi</code></pre><p>O(nC)。</p>'],
+  ],
+  memo: ['矩阵连乘：时间 O(n³)，空间 O(n²)', '最大子段和：b>0 就接上，否则从 a[j] 重新开始', '编辑距离：改、删、插三选一取最小'],
+  eg: ['qb-j4', 'sb-p2', 'qb-d1', 'qa-a2', 'nt-2'] },
+
+{ id: 'divcase', name: '分治经典题', tier: 2, one: '棋盘覆盖、循环赛、大整数乘法、Strassen、格雷码、maxmin。',
+  steps: [
+    ['复杂度对照', '<div class="tbl"><table><tr><th>问题</th><th>递归式</th><th>结果</th></tr><tr><td>棋盘覆盖</td><td>T(k)=4T(k−1)+O(1)</td><td>O(4ᵏ)</td></tr><tr><td>大整数乘法</td><td>T(n)=3T(n/2)+O(n)</td><td>O(n^1.59)</td></tr><tr><td>Strassen</td><td>T(n)=7T(n/2)+O(n²)</td><td>O(n^2.81)</td></tr><tr><td>最接近点对</td><td>T(n)=2T(n/2)+O(n)</td><td>O(n log n)</td></tr><tr><td>Hanoi 塔</td><td>h(n)=2h(n−1)+1</td><td>2ⁿ−1</td></tr></table></div>'],
+    ['循环赛日程表', '<p>左上角的表抄到右下角；左上角每个数加 n/2 放左下角，再抄到右上角。从 2 人扩到 4 人、8 人。</p>'],
+    ['格雷码', '<p>n−1 位的码<b>正序</b>前面加 0，<mark>逆序</mark>前面加 1。</p>'],
+    ['棋盘覆盖', '<p>用一个 L 型骨牌盖住没有特殊方格的三块的会合角，四块就都有特殊方格，递归下去。</p>'],
+  ],
+  memo: ['大整数乘法 3 次乘 O(n^1.59)，Strassen 7 次乘 O(n^2.81)', '棋盘覆盖 T(k)=4T(k−1)+O(1)=O(4ᵏ)', 'Hanoi 塔移动 2ⁿ−1 次', '格雷码后一半要逆序'],
+  eg: ['qb-j2', 'qb-d4', 'sc-a1', 'qb-d8', 'nt-9', 'nt-10'] },
+
+{ id: 'search', name: '回溯与分支限界经典题', tier: 2, one: 'N 皇后、最大团、装载、旅行售货员、批处理调度、m 着色。',
+  steps: [
+    ['对照表', '<div class="tbl"><table><tr><th>问题</th><th>解空间</th><th>约束</th><th>限界</th></tr><tr><td>装载</td><td>子集树</td><td>cw+w[i]≤c</td><td>cw+r&gt;bestw</td></tr><tr><td>最大团</td><td>子集树</td><td>与团中顶点都相连</td><td>cn+n−i&gt;bestn</td></tr><tr><td>N 皇后</td><td>n 叉树</td><td>不同列、不同斜线</td><td>无</td></tr><tr><td>m 着色</td><td>m 叉树，mⁿ 叶</td><td>相邻不同色</td><td>无</td></tr><tr><td>旅行售货员</td><td>排列树</td><td>有边</td><td>cc&lt;bestc</td></tr><tr><td>批处理调度</td><td>排列树</td><td>—</td><td>f&lt;bestf</td></tr></table></div>'],
+    ['堆的选择', '<p>求<mark>最大用最大堆</mark>（0-1 背包、最大团、装载），求<mark>最小用最小堆</mark>（旅行售货员、单源最短路、批处理）。</p>'],
+    ['批处理调度怎么算', '<pre><code>f1 = 机器 1 累计时间\nf2 = max(f1, 上一个作业的 f2) + 本作业机器 2 时间\n完成时间和 = 所有 f2 相加</code></pre>'],
+    ['N 皇后的判断', '<pre><code>abs(k-j) == abs(x[j]-x[k]) || x[j] == x[k]   → 冲突</code></pre>'],
+  ],
+  memo: ['最大团用最大堆，旅行售货员用最小堆', '最大团限界：cn + n − i > bestn', 'm 着色：叶子 mⁿ 个，每个内结点 m 个孩子', '批处理：机器 2 开始 = max(机器 1 完成, 机器 2 空闲)'],
+  eg: ['qb-d3', 'qa-p3', 'qa-p4', 'nt-21', 'sb-c6'] },
+
 { id: 'greedy', name: '贪心算法', tier: 2, one: '性质、与动态规划的区别、活动安排、汽车加油。',
   steps: [
     ['两条性质', '<p><mark>贪心选择性质</mark>（整体最优可以由一系列局部最优得到）和<mark>最优子结构</mark>。</p>'],
@@ -80,7 +111,7 @@ export const TOPICS = [
     ['证明怎么写', '<p>常用<b>交换论证</b>：取一个最优解，把它的某个选择换成贪心选择，说明不会变差。</p>'],
   ],
   memo: ['贪心：贪心选择性质 + 最优子结构；自顶向下', '活动安排：相容且结束时间最早', '汽车加油：能不加就不加，O(k)'],
-  eg: ['s21-z2', 's23-j2', 'ex-13'] },
+  eg: ['s21-z2', 'sc-d1', 'qb-j3', 'nt-6', 's23-j2'] },
 
 { id: 'complexity', name: '渐近记号与复杂度', tier: 2, one: '每年都有的基础分：O/Ω/θ 含义、函数排序。',
   steps: [
@@ -90,7 +121,7 @@ export const TOPICS = [
     ['分析哪种情况', '<p>一般分析<b>最坏</b>情况。算法优劣用时间复杂度和空间复杂度衡量。</p>'],
   ],
   memo: ['O 上界，Ω 下界，θ 紧确界', '常数 < 对数 < 多项式 < 指数 < 阶乘 < nⁿ', '一般分析最坏情况'],
-  eg: ['s22-1', 's21-3', 's23-c1'] },
+  eg: ['s22-1', 's21-3', 'sc-z1', 'nt-1'] },
 
 { id: 'select', name: '线性时间选择', tier: 3, one: '求划分基准，5 个一组取中位数的中位数。',
   steps: [
@@ -102,13 +133,15 @@ export const TOPICS = [
   memo: ['5 个一组 → 各组中位数 → 中位数的中位数', '线性时间选择有 2 次递归调用', '最坏 O(n)，因为 1/5+3/4<1'],
   demo: 'mom', eg: ['s21-4', 'ex-7', 's23-c2'] },
 
-{ id: 'graph', name: 'Prim / Kruskal / Dijkstra', tier: 3, one: '选择填空：各自求什么、复杂度多少。',
+{ id: 'graph', name: '图算法', tier: 2, one: 'Dijkstra 填表反复考，还有 Kruskal、Prim、Floyd。',
   steps: [
-    ['对照表', '<div class="tbl"><table><tr><th></th><th>求什么</th><th>贪心策略</th><th>复杂度</th></tr><tr><th>Prim</th><td>最小生成树</td><td>选离已选集合最近的<b>点</b></td><td>O(n²)</td></tr><tr><th>Kruskal</th><td>最小生成树</td><td>选不成环的最短<b>边</b></td><td>O(e log e)</td></tr><tr><th>Dijkstra</th><td>单源最短路径</td><td>选离源点最近的点</td><td>O(n²)</td></tr></table></div><p>O(n²) 指数组实现。</p>'],
-    ['Dijkstra 填表', '<ol><li>d[源]=0，其余为直接边长或 ∞。</li><li>取未确定中 d 最小的点 u，加入 S。</li><li>用 u 更新邻居：d[v] = min(d[v], d[u]+w(u,v))。</li><li>重复到全部确定。</li></ol><p>要求边权<mark>非负</mark>。</p>'],
+    ['对照表', '<div class="tbl"><table><tr><th></th><th>求什么</th><th>贪心策略</th><th>复杂度</th></tr><tr><th>Prim</th><td>最小生成树</td><td>选离已选集合最近的<b>点</b></td><td>O(n²)</td></tr><tr><th>Kruskal</th><td>最小生成树</td><td>选不成环的最短<b>边</b></td><td>O(e log e)</td></tr><tr><th>Dijkstra</th><td>单源最短路径</td><td>选离源点最近的点</td><td>O(n²)</td></tr><tr><th>Floyd</th><td>每对顶点最短路</td><td>动态规划</td><td>O(n³)</td></tr></table></div><p>O(n²) 指数组实现。</p>'],
+    ['Dijkstra 填表', '<ol><li>d[源]=0，其余为直接边长或 ∞。</li><li>取未确定中 d 最小的点 u，加入 S。</li><li>用 u 更新邻居：d[v] = min(d[v], d[u]+w(u,v))。</li><li>重复到全部确定。</li></ol><p>要求边权<mark>非负</mark>。考试表头是 <b>S、u、dist</b>，初始行 u 写 –，没有边写 ∞。</p>'],
+    ['Kruskal 写边', '<p>边按权排序，依次取，<mark>会成环就跳过</mark>，直到 n−1 条。答题要按加入顺序列出边。</p>'],
+    ['Floyd 写矩阵', '<pre><code>Dk[i,j] = min( D(k-1)[i,j], D(k-1)[i,k] + D(k-1)[k,j] )</code></pre><p>D₀ 是邻接矩阵。算 Dₖ 时，第 k 行和第 k 列不变，只看其余元素经过 k 会不会更短。</p>'],
   ],
   memo: ['Prim 选点 O(n²)，Kruskal 选边 O(e log e)，都是最小生成树', 'Dijkstra 数组实现 O(n²)，边权非负'],
-  eg: ['ex-19', 's23-c6', 's23-7'] },
+  eg: ['sb-z2', 'qb-d2', 'sc-z3', 'nt-8'] },
 
 { id: 'basics', name: '算法基本概念', tier: 3, one: '填空送分：四条性质、计算模型。',
   steps: [
@@ -127,15 +160,15 @@ export const TOPICS = [
   memo: ['开放题：算法思想 → 具体的事 → 对应关系'],
   eg: ['s23-j4', 's21-j5'] },
 
-{ id: 'randnp', name: '概率算法与 NP', tier: 4, one: '只在 A 卷出现，老师没讲可以跳过。',
+{ id: 'randnp', name: '概率算法与 NP', tier: 3, one: '综合卷和题库的选择填空里反复出现，往年卷没考过。',
   steps: [
     ['四类概率算法', '<div class="tbl"><table><tr><th>类型</th><th>特点</th></tr><tr><th>数值概率</th><td>求近似解，如投点法估计 π</td></tr><tr><th>蒙特卡罗</th><td>总能给出答案，但不一定正确</td></tr><tr><th>拉斯维加斯</th><td>找到的一定正确，但可能找不到</td></tr><tr><th>舍伍德</th><td>一定正确，消除输入好坏的影响</td></tr></table></div>'],
     ['P 与 NP', '<ul><li><b>P</b>：多项式时间可解。</li><li><b>NP</b>：多项式时间可验证。</li><li><b>NP 难</b>：所有 NP 问题都能多项式归约到它。</li><li><b>NP 完全</b>：NP 难且属于 NP。</li></ul>'],
   ],
   memo: ['拉斯维加斯：找到必正确；蒙特卡罗：不一定正确', 'NP 完全 = NP 难 + 属于 NP'],
-  eg: ['sa-c9', 'sa-c10', 'sa-10'] },
+  eg: ['sa-c9', 'qa-c4', 'qa-c39', 'sa-c10'] },
 
-{ id: 'lp', name: '线性规划与单纯形', tier: 4, one: '只在 A 卷出现，考了 15 分大题。',
+{ id: 'lp', name: '线性规划与单纯形', tier: 4, one: '综合卷一有 15 分大题，往年卷没考过，老师没讲可以后看。',
   steps: [
     ['基本结论', '<p>有最优解时，一定能在可行域的<mark>顶点</mark>上取到。</p>'],
     ['单纯形步骤', '<ol><li>写初始表，基变量单位化。</li><li>看检验数：全 ≤ 0 就最优。</li><li>选正检验数最大的列<b>入基</b>。</li><li>b 除以该列<b>正</b>元素，比值最小的行<b>离基</b>。</li><li>转轴变换，回到第 2 步。</li></ol><p>若入基列没有正元素，则目标函数无上界。</p>'],
@@ -143,4 +176,5 @@ export const TOPICS = [
   memo: ['检验数全 ≤ 0 时最优（求最大）', '离基：b ÷ 正元素，取最小比值'],
   eg: ['sa-z2', 'sa-c8'] },
 ];
+export const TOPICS = [...LIST].sort((a, b) => a.tier - b.tier);
 export const TIERS = { 1: '必考', 2: '高频', 3: '常考', 4: '选看' };
