@@ -7,5 +7,5 @@
 - 随机流：瀑布流，没做过和做错的先出现
 - 逐个知识点教学：讲解、可单步演示、速记、例题
 
-题目在 `js/data/questions.js`，讲解在 `js/data/topics.js`。改完运行 `npm test` 校验。
+题目在 `js/data/questions.js`，讲解在 `js/data/topics.js`。改完运行 `npm test && npm run stamp`，再提交推送。
 本地预览：`python3 -m http.server`。
