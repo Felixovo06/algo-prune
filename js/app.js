@@ -2,7 +2,8 @@ import { Q, SETS } from './data/questions.js';
 import { TOPICS, TIERS } from './data/topics.js';
 import * as store from './store.js';
 import { renderQ, h } from './question.js';
-import { mountDemo, heroTree } from './demos.js';
+import { mountDemo } from './demos.js';
+import { mountFeed } from './feed.js';
 import { mount as visitors } from './visitors.js';
 
 const main = document.getElementById('main'), byId = Object.fromEntries(Q.map(q => [q.id, q])), real = SETS.filter(s => s.id !== 'ex');
@@ -16,19 +17,18 @@ let cleanup = null;
 
 /* 首页 */
 function home() {
-  const hero = h('div', 'hero'), txt = h('div', 'hero-txt', `<h1>算法考试速成</h1><p class="soft">算法设计与分析期末，不会考的先剪掉。${real.length} 套往年卷 ${Q.length - ofSet('ex').length} 题，加 ${ofSet('ex').length} 道补充练习，按考频排好先后。答案重新核对过，原答案里发现的错误用红色标出。</p>`);
-  const r = h('div', 'row'); r.append(link('#/learn/knapsack', '从必考点学起', 'btn pri'), link('#/feed', '直接随机刷')); txt.append(r);
-  const demo = h('div', 'demo'), box = h('div', 'scroll'), cap = h('div', 'say'); demo.append(h('p', 'small soft', '2022–2023 第三题：重量 1、2、3，价值 6、10、12，容量 5'), box, cap); hero.append(txt, demo); main.append(hero); heroTree(box, cap);
-  const p = store.progress(Q), errs = Q.filter(q => q.err).length;
-  main.append(h('section', 'sec', `<h2>四种刷法</h2><div class="ways">
-    <a href="#/learn"><h3>逐个知识点学</h3><p class="soft small">讲解、可以单步的演示、速记，最后配例题</p></a>
-    <a href="#/topics"><h3>按知识点刷</h3><p class="soft small">${TOPICS.length} 个知识点，哪里弱刷哪里</p></a>
-    <a href="#/sets"><h3>按套刷</h3><p class="soft small">边做边看答案，或做完再交卷</p></a>
-    <a href="#/feed"><h3>随机流</h3><p class="soft small">往下滑就有题，没做过和做错的先出现</p></a></div>`));
+  const p = store.progress(Q), bad = Q.filter(q => ['no', 'mid'].includes(store.status(q.id))).length;
+  const hd = h('div', 'home-h', `<div><h1>算法考试速成</h1><p class="soft">算法设计与分析期末复习，${real.length} 套往年卷 ${Q.length - ofSet('ex').length} 题，补充练习 ${ofSet('ex').length} 题。</p></div><div class="home-p"><div class="row"><span>会了 <b class="num">${p.ok}</b></span><span>做过 <b class="num">${p.done}</b></span><span>共 <b class="num">${p.all}</b></span></div><span class="bar wide"><b style="width:${pct(p)}%"></b></span></div>`);
+  main.append(hd);
+  main.append(h('section', 'modes', `
+    <a class="m-feed" href="#/feed"><h2>随机刷</h2><p>一屏一题，上下滑</p></a>
+    <a href="#/learn"><h2>学知识点</h2><p>${TOPICS.length} 课，讲解加例题</p></a>
+    <a href="#/topics"><h2>按知识点刷</h2><p>哪里不会刷哪里</p></a>
+    <a href="#/sets"><h2>按套刷</h2><p>练习或模拟考试</p></a>
+    <a href="#/wrong"><h2>错题收藏</h2><p>${bad ? `还有 ${bad} 题不会` : '答错的会自动进来'}</p></a>
+    <a href="#/errata"><h2>答案更正</h2><p>原答案有 ${Q.filter(q => q.err).length} 处改动</p></a>`));
   const cnt = (t, s) => Q.filter(q => q.set === s && q.t.includes(t)).length;
-  const dots = n => n ? `<span class="dots" title="${n} 题">${'<i></i>'.repeat(Math.min(n, 5))}</span>${n > 5 ? `<small class="soft"> ${n}</small>` : ''}` : '';
-  main.append(h('section', 'sec', `<h2>考点热度</h2><p class="soft small">一个点是一道题（一题可能考多个知识点）。往年规律，不保证今年照考。</p><div class="scroll"><table class="heat"><thead><tr><th>知识点</th><th></th>${real.map(s => `<th>${s.name}</th>`).join('')}<th>已会</th></tr></thead><tbody>${TOPICS.map(t => `<tr><th><a href="#/learn/${t.id}">${t.name}</a></th><td>${tier(t)}</td>${real.map(s => `<td>${dots(cnt(t.id, s.id))}</td>`).join('')}<td>${bar(store.progress(ofTopic(t.id)))}</td></tr>`).join('')}</tbody></table></div>`));
-  const s = h('section', 'sec', `<h2>你的进度</h2><p>做过 <b class="num">${p.done}</b> 题，会了 <b class="num">${p.ok}</b> 题，共 <span class="num">${p.all}</span> 题。</p>`); const rr = h('div', 'row'); rr.append(link('#/wrong', '看错题和收藏'), link('#/errata', `原答案更正 ${errs} 处`)); s.append(rr); main.append(s);
+  main.append(h('section', 'sec', `<h2>考点和考频</h2><p class="soft small">数字是每套卷里的题数，一题可能考多个知识点。往年规律，不保证今年照考。</p><div class="scroll"><table class="heat"><thead><tr><th>知识点</th><th>重要性</th>${real.map(s => `<th>${s.name}</th>`).join('')}<th>已会</th></tr></thead><tbody>${TOPICS.map(t => `<tr><th><a href="#/learn/${t.id}">${t.name}</a></th><td>${tier(t)}</td>${real.map(s => `<td class="num">${cnt(t.id, s.id) || '<span class="soft">–</span>'}</td>`).join('')}<td>${bar(store.progress(ofTopic(t.id)))}</td></tr>`).join('')}</tbody></table></div>`));
 }
 
 /* 教学 */
@@ -49,13 +49,39 @@ function learn(id) {
   a.append(pg); g.append(a); main.append(g);
 }
 
-/* 带筛选的题目列表 */
+/* 一题一页 + 答题卡 */
+function runner(qs, { exam = false, from = 'undone' } = {}) {
+  const g = h('div', 'run'), stage = h('div', 'run-stage'), side = h('aside', 'run-side'), sheet = h('div', 'card-grid'), bar = h('div', 'run-bar'), clock = h('span', 'num'), score = h('p', 'score');
+  const mkb = (t, f, c = '') => { const b = h('button', 'btn ' + c, t); b.type = 'button'; b.onclick = f; return b; };
+  let i = 0, submitted = false, t0 = Date.now(), timer = 0; const els = [], touched = new Set();
+  const mark = k => { const b = sheet.children[k], e = els[k]; const r = exam && !submitted ? (touched.has(k) ? 'sel' : '') : exam ? (e?.result() || '') : store.status(qs[k].id); b.className = r + (k === i ? ' cur' : ''); b.ariaLabel = `第 ${k + 1} 题${{ ok: '，已会', mid: '，模糊', no: '，不会', sel: '，已作答' }[r] || ''}`; };
+  const get = k => els[k] ||= (() => { const e = renderQ(qs[k], { mode: exam ? 'exam' : 'instant', index: k + 1, onDone: () => mark(k) }); const t = () => { if (exam && !submitted) { touched.add(k); mark(k); } }; e.addEventListener('input', t); e.addEventListener('click', ev => { if (ev.target.closest('.opt')) t(); }); return e; })();
+  const show = k => { if (k < 0 || k >= qs.length) return; const o = i; i = k; stage.replaceChildren(get(k)); mark(o); mark(i); prev.disabled = !i; next.disabled = i === qs.length - 1; pos.textContent = `${i + 1} / ${qs.length}`; scrollTo(0, 0); };
+  const prev = mkb('上一题', () => show(i - 1)), next = mkb('下一题', () => show(i + 1), 'pri'), pos = h('span', 'num soft'), tog = mkb('答题卡', () => { const on = side.classList.toggle('on'); tog.setAttribute('aria-expanded', on); }, 'tog'); tog.setAttribute('aria-expanded', 'false');
+  qs.forEach((_, k) => { const b = h('button', '', k + 1); b.type = 'button'; b.onclick = () => { show(k); side.classList.remove('on'); tog.setAttribute('aria-expanded', 'false'); }; sheet.append(b); });
+  side.append(h('h3', '', '答题卡'), sheet, h('p', 'legend small soft', exam ? '<i class="sel"></i>已作答 <i></i>未作答' : '<i class="ok"></i>会 <i class="mid"></i>模糊 <i class="no"></i>不会 <i></i>没做'));
+  if (exam) {
+    const tick = () => { const x = Math.floor((Date.now() - t0) / 1000); clock.textContent = `用时 ${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; }; tick(); timer = setInterval(tick, 1000);
+    let armed = false; const sub = mkb('交卷', () => {
+      const left = qs.length - touched.size; if (left && !armed) { armed = true; sub.textContent = `还有 ${left} 题没写，再点交卷`; setTimeout(() => { armed = false; if (!submitted) sub.textContent = '交卷'; }, 4000); return; }
+      submitted = true; clearInterval(timer); tick(); qs.forEach((_, k) => { get(k).reveal(); }); qs.forEach((_, k) => mark(k));
+      const ob = els.filter(e => e.q.type !== 'open'), ok = ob.filter(e => e.result() === 'ok').length; score.innerHTML = ob.length ? `客观题 ${ok} / ${ob.length}<small class="soft">解答题对照答案自评</small>` : '已交卷<small class="soft">对照答案自评</small>'; sub.remove(); side.querySelector('.legend').innerHTML = '<i class="ok"></i>会 <i class="mid"></i>模糊 <i class="no"></i>不会 <i></i>未自评'; side.classList.add('on'); tog.setAttribute('aria-expanded', 'true'); show(0);
+    }, 'pri'); side.append(clock, score, sub);
+  }
+  const key = e => { if (e.target.matches?.('input,textarea') || e.metaKey || e.ctrlKey || e.altKey) return; if (e.key === 'ArrowRight') show(i + 1); else if (e.key === 'ArrowLeft') show(i - 1); };
+  addEventListener('keydown', key);
+  bar.append(prev, pos, next, tog); const left = h('div', 'run-main'); left.append(stage, bar); g.append(left, side);
+  qs.forEach((_, k) => mark(k)); const f = exam ? 0 : qs.findIndex(q => !store.status(q.id)); show(f < 0 ? 0 : f);
+  return { el: g, stop: () => { clearInterval(timer); removeEventListener('keydown', key); } };
+}
 function listing(qs, empty) {
   const F = { all: ['全部', () => true], todo: ['没做过', q => !store.status(q.id)], bad: ['不会或模糊', q => ['no', 'mid'].includes(store.status(q.id))], choice: ['选择', q => q.type === 'choice'], fill: ['填空', q => q.type === 'fill' || q.kind === '填空'], open: ['解答', q => q.type === 'open' && !q.kind] };
-  const chips = h('div', 'chips'), box = h('div', 'stack'); box.style.marginTop = '20px';
-  const draw = k => { box.replaceChildren(); const l = qs.filter(F[k][1]); if (!l.length) box.append(h('p', 'soft', empty || '这个筛选下没有题，换一个试试。')); l.forEach((q, i) => box.append(renderQ(q, { index: i + 1 }))); };
-  Object.entries(F).forEach(([k, [n, f]]) => { const c = qs.filter(f).length; if (!c && k !== 'all') return; const b = h('button', 'chip', `${n} ${c}`); b.type = 'button'; b.setAttribute('aria-pressed', k === 'all'); b.onclick = () => { [...chips.children].forEach(x => x.setAttribute('aria-pressed', x === b)); draw(k); }; chips.append(b); });
-  if (qs.length) main.append(chips); main.append(box); draw('all');
+  if (!qs.length) { main.append(h('p', 'soft', empty)); return; }
+  const chips = h('div', 'chips'), box = h('div'); box.style.marginTop = '20px'; let cur = null, list = qs, key = 'all';
+  const draw = (k, sh) => { key = k; cur?.stop(); cur = null; list = qs.filter(F[k][1]); if (sh) list = list.map(q => [Math.random(), q]).sort((a, b) => a[0] - b[0]).map(x => x[1]); if (!list.length) { box.replaceChildren(h('p', 'soft', '这个筛选下没有题了。')); return; } cur = runner(list); box.replaceChildren(cur.el); };
+  Object.entries(F).forEach(([k, [n, f]]) => { const c = qs.filter(f).length; if (!c && k !== 'all') return; const b = h('button', 'chip', `${n} ${c}`); b.type = 'button'; b.setAttribute('aria-pressed', k === 'all'); b.onclick = () => { [...chips.querySelectorAll('[aria-pressed]')].forEach(x => x.setAttribute('aria-pressed', x === b)); draw(k); }; chips.append(b); });
+  const sh = h('button', 'chip', '打乱'); sh.type = 'button'; sh.onclick = () => draw(key, true); chips.append(sh);
+  main.append(chips, box); draw('all'); cleanup = () => cur?.stop();
 }
 function topics() {
   main.append(head('按知识点刷', '选一个知识点，真题在前，补充练习在后。'));
@@ -65,57 +91,18 @@ function topic(id) { const t = TOPICS.find(x => x.id === id); if (!t) return not
 
 /* 套卷 */
 function sets() {
-  main.append(head('按套刷', '想找手感选“做完再对”，想过知识点选“边做边看”。'));
+  main.append(head('按套刷', '练习边做边看答案；模拟考试计时，交卷后统一对答案。'));
   main.append(h('div', 'list', SETS.map(s => { const p = store.progress(ofSet(s.id)); return `<a href="#/set/${s.id}"><div><h3>${s.name}<small class="soft">${s.sub}</small></h3><p class="soft small">${s.note}</p></div><div class="r">${bar(p)}<span class="num">做过 ${p.done}/${p.all}</span></div></a>`; }).join('')));
 }
 function set(id) {
   const s = SETS.find(x => x.id === id); if (!s) return notFound(); const qs = ofSet(id);
-  const bar = h('div', 'exam-bar'), chips = h('div', 'chips'), right = h('div', 'row'), paper = h('div', 'exam'), title = h('div', 'exam-title', `<h1>${s.name}</h1><p class="soft">${s.sub}，共 ${qs.length} 题</p>`), box = h('div', 'stack');
-  right.style.marginLeft = 'auto'; paper.append(title, box); bar.append(chips, right); main.append(bar, paper);
-  const draw = mode => {
-    box.replaceChildren(); right.replaceChildren(); let timer;
-    const els = qs.map((q, i) => renderQ(q, { mode, index: i + 1 })); box.append(...els); cleanup?.(); cleanup = null;
-    if (mode !== 'exam') return;
-    const t0 = Date.now(), clock = h('span', 'num soft', '00:00'), sub = h('button', 'btn pri', '交卷'); sub.type = 'button';
-    const tick = () => { const x = Math.floor((Date.now() - t0) / 1000); clock.textContent = `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; };
-    timer = setInterval(tick, 1000); cleanup = () => clearInterval(timer);
-    sub.onclick = () => { clearInterval(timer); tick(); els.forEach(e => e.reveal()); const ob = els.filter(e => e.q.type !== 'open'), ok = ob.filter(e => e.result() === 'ok').length; sub.remove(); right.append(h('span', 'score', ob.length ? `客观题 ${ok}/${ob.length}` : '已交卷'), h('span', 'small soft', '解答题请对照答案自评')); scrollTo({ top: 0 }); };
-    right.append(clock, sub);
-  };
-  [['instant', '边做边看'], ['exam', '做完再对']].forEach(([k, n]) => { const b = h('button', 'chip', n); b.type = 'button'; b.setAttribute('aria-pressed', k === 'instant'); b.onclick = () => { if (b.getAttribute('aria-pressed') === 'true') return; [...chips.children].forEach(x => x.setAttribute('aria-pressed', x === b)); draw(k); }; chips.append(b); });
-  draw('instant');
+  const top = h('div', 'set-top', `<h1>${s.name}<small class="soft">${s.sub}，${qs.length} 题</small></h1>`), chips = h('div', 'chips'), box = h('div'); top.append(chips); main.append(top, box); let cur = null;
+  const draw = exam => { cur?.stop(); cur = runner(qs, { exam }); box.replaceChildren(cur.el); };
+  [[false, '练习'], [true, '模拟考试']].forEach(([k, n]) => { const b = h('button', 'chip', n); b.type = 'button'; b.setAttribute('aria-pressed', !k); b.onclick = () => { if (b.getAttribute('aria-pressed') === 'true') return; [...chips.children].forEach(x => x.setAttribute('aria-pressed', x === b)); draw(k); }; chips.append(b); });
+  draw(false); cleanup = () => cur?.stop();
 }
 
-/* 随机流：没做过、做错的权重高 */
-const weight = q => ({ '': 3, no: 4, mid: 3, ok: .6 }[store.status(q.id)] * (q.t.some(t => TOPICS.find(x => x.id === t).tier === 1) ? 1.4 : q.t.every(t => TOPICS.find(x => x.id === t).tier === 4) ? .4 : 1));
-const shuffle = (a, w = () => 1) => a.map(x => [Math.random() ** (1 / w(x)), x]).sort((p, q) => q[0] - p[0]).map(p => p[1]);
-function feed() {
-  main.append(head('随机流', '往下滑，题目和速记卡会一直来。没做过的和做错的先出现。'));
-  const memos = TOPICS.flatMap(t => t.memo.map(m => ({ memo: m, t })));
-  const F = { all: '全部', real: '只刷真题', obj: '只刷选择填空', bad: '只刷不会的', memo: '只看速记' };
-  const chips = h('div', 'chips'); chips.style.marginBottom = '20px'; const grid = h('div', 'masonry'), end = h('div', 'sentinel'); main.append(chips, grid, end);
-  let pool = [], mode = 'all', round = 0, cols = [], cards = [], dead = false;
-  const base = () => Q.filter(q => mode === 'real' ? q.set !== 'ex' : mode === 'obj' ? q.type !== 'open' : mode === 'bad' ? ['no', 'mid'].includes(store.status(q.id)) : true);
-  const fill = () => {
-    round++; const qs = mode === 'memo' ? [] : shuffle(base(), weight), ms = mode === 'bad' || mode === 'obj' ? [] : shuffle(memos);
-    if (mode === 'memo') pool = ms; else { pool = []; qs.forEach((q, i) => { pool.push(q); if (ms.length && i % 5 === 3) pool.push(ms.pop()); }); }
-  };
-  const card = x => { if (!x.memo) return renderQ(x, { compact: true }); const c = h('div', 'memo'); const p = h('p'); p.textContent = x.memo; const a = link(`#/learn/${x.t.id}`, '去看讲解', ''); c.append(h('span', '', '速记 · ' + x.t.name), p, a); return c; };
-  const put = c => cols.reduce((m, x) => x.offsetHeight < m.offsetHeight ? x : m).append(c);
-  const layout = () => { const n = innerWidth < 720 ? 1 : innerWidth < 1060 ? 2 : 3; if (n === cols.length) return; grid.style.gridTemplateColumns = `repeat(${n},minmax(0,1fr))`; cols = Array.from({ length: n }, () => h('div', 'col')); grid.replaceChildren(...cols); cards.forEach(put); };
-  const more = () => {
-    if (dead) return;
-    for (let i = 0; i < 9; i++) {
-      if (!pool.length) { if (mode === 'bad' && round) { end.textContent = cards.length ? '不会的都过了一遍。' : '还没有标记为“不会”或“模糊”的题，先去别的分类刷几道。'; dead = true; return; } fill(); if (!pool.length) { end.textContent = '还没有标记为“不会”或“模糊”的题，先去别的分类刷几道。'; dead = true; return; } }
-      const c = card(pool.shift()); cards.push(c); put(c);
-    }
-    end.textContent = `第 ${round} 轮 · 继续往下滑`;
-  };
-  const io = new IntersectionObserver(e => { if (e[0].isIntersecting) { more(); if (!dead) { io.unobserve(end); requestAnimationFrame(() => io.observe(end)); } } }, { rootMargin: '600px' });
-  const start = () => { pool = []; round = 0; cards = []; cols = []; dead = false; layout(); end.textContent = ''; more(); io.unobserve(end); io.observe(end); };
-  Object.entries(F).forEach(([k, n]) => { const b = h('button', 'chip', n); b.type = 'button'; b.setAttribute('aria-pressed', k === mode); b.onclick = () => { mode = k; [...chips.children].forEach(x => x.setAttribute('aria-pressed', x === b)); start(); }; chips.append(b); });
-  addEventListener('resize', layout); cleanup = () => { io.disconnect(); removeEventListener('resize', layout); }; start();
-}
+function feed() { cleanup = mountFeed(main); }
 
 /* 错题与更正 */
 function wrong() {
@@ -135,7 +122,7 @@ function route() {
   if (location.hash && !location.hash.startsWith('#/')) return; // 跳转正文等普通锚点
   cleanup?.(); cleanup = null; const [p = '', id] = location.hash.replace(/^#\//, '').split('/'); main.replaceChildren(); (Object.hasOwn(R, p) ? R[p] : notFound)(id);
   const nav = { topic: 'topics', set: 'sets', errata: 'wrong' }[p] || p; document.querySelectorAll('[data-nav]').forEach(a => a.dataset.nav === nav ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
-  const t = main.querySelector('h1')?.textContent; document.title = p ? `${t} · 算法考试速成` : '算法考试速成'; scrollTo(0, 0);
+  const t = main.querySelector('h1')?.firstChild.textContent || '随机刷'; document.title = p ? `${t} · 算法考试速成` : '算法考试速成'; scrollTo(0, 0);
 }
 addEventListener('hashchange', route);
 document.getElementById('theme').onclick = () => { const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; try { localStorage.setItem('prune.theme', r.dataset.theme); } catch { /* 忽略 */ } };

@@ -1,1 +1,1 @@
-{ "name": "algo-prune", "private": true, "type": "module", "scripts": { "test": "node tests/run.js", "stamp": "node stamp.js" } }
+{ "name": "algo-exam", "private": true, "type": "module", "scripts": { "test": "node tests/run.js", "stamp": "node stamp.js" } }

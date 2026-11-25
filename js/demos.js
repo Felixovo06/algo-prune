@@ -133,10 +133,3 @@ function mom(init) {
 const KIND = { knap, huff, lcs, mom };
 export const mountDemo = id => { const [k, init] = PRE[id]; return KIND[k](init); };
 
-/** 首页：自动走一遍 2022–2023 的背包树 */
-export function heroTree(box, cap) {
-  const w = [1, 2, 3], v = [6, 10, 12], C = 5, M = knapModel({ w: '1,2,3', v: '6,10,12', C: '5' }, { algo: 'bt' });
-  let i = M.count - 1; const draw = () => M.draw(i, box, cap); draw();
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const t = setInterval(() => { if (!box.isConnected) return clearInterval(t); i = (i + 1) % M.count; draw(); }, 1500);
-}
