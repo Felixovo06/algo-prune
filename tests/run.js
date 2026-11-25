@@ -1,6 +1,7 @@
 import { Q, SETS } from '../js/data/questions.js';
 import { TOPICS } from '../js/data/topics.js';
 import * as A from '../js/algos.js';
+import { plan, today } from '../js/visitors.js';
 let n = 0, bad = 0;
 const ok = (c, m) => { n++; if (!c) { bad++; console.log('FAIL', m); } };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), `${m}: ${JSON.stringify(a)} != ${JSON.stringify(b)}`);
@@ -44,5 +45,10 @@ eq(A.dijkstra(5, [[1, 2, 10], [1, 4, 30], [1, 5, 100], [2, 3, 50], [3, 5, 10], [
 // 单纯形终表：检查各行是原方程组的推论（代入随机非基变量）
 for (let z = 0; z < 50; z++) { const x1 = Math.random(), x4 = Math.random(), x5 = Math.random(); const x2 = 4 - .4 * x1 - .1 * x4 - .8 * x5, x3 = 5 - .2 * x1 - .3 * x4 - .4 * x5, x6 = 11 - x1 + .5 * x4 - 10 * x5; const z0 = 11 - .2 * x1 - .8 * x4 - 2.4 * x5;
   for (const [l, r] of [[x1 + 3 * x2 - x3 + 2 * x5, 7], [x4 - 2 * x2 + 4 * x3, 12], [x6 - 4 * x2 + 3 * x3 + 8 * x5, 10], [-x2 + 3 * x3 - 2 * x5, z0]]) ok(Math.abs(l - r) < 1e-9, 'simplex'); }
+// 访客计数规则
+const V = { host: 'felixovo06.github.io', webdriver: false, nocount: '', lastDay: null, seen: null, day: '2026-11-25' };
+eq(plan(V), { visit: true, person: true }, 'first visit'); eq(plan({ ...V, lastDay: '2026-11-25', seen: '1' }), { visit: false, person: false }, 'same day'); eq(plan({ ...V, lastDay: '2026-11-24', seen: '1' }), { visit: true, person: false }, 'next day');
+for (const x of [{ host: 'localhost' }, { webdriver: true }, { nocount: '1' }]) eq(plan({ ...V, ...x }), { visit: false, person: false }, 'skip');
+eq(today(new Date(2026, 0, 5)), '2026-01-05', 'today');
 console.log(`${n} checks, ${bad} failed; 题 ${Q.length}（真题 ${Q.filter(q => q.set !== 'ex').length}），知识点 ${TOPICS.length}，更正 ${Q.filter(q => q.err).length}，存疑 ${Q.filter(q => q.doubt).length}`);
 process.exit(bad ? 1 : 0);
