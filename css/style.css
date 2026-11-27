@@ -139,7 +139,14 @@ pre i{font-style:normal}pre .k{color:var(--c-k);font-weight:600}pre .f{color:var
 .lesson{display:grid;grid-template-columns:minmax(0,196px) minmax(0,1fr);gap:40px}.lesson aside{position:sticky;top:84px;align-self:start;display:flex;flex-direction:column;gap:1px;font-size:.92rem;max-height:calc(100vh - 104px);overflow-y:auto}.lesson aside a{display:flex;align-items:center;gap:10px;padding:6px 10px;color:var(--soft);text-decoration:none;border-radius:9px;line-height:1.5}.lesson aside a:hover{background:var(--wash);color:var(--ink)}.lesson aside a[aria-current]{color:var(--ink);background:var(--wash);font-weight:600}
 .lesson article{display:flex;flex-direction:column;gap:36px;max-width:780px;min-width:0}
 @media (max-width:860px){.lesson{grid-template-columns:minmax(0,1fr)}.lesson aside{display:none}}
-.steps{display:flex;flex-direction:column;gap:32px;counter-reset:s}.step{display:flex;flex-direction:column;gap:12px;min-width:0}.steps .step{counter-increment:s}.steps .step h2{display:flex;gap:12px;align-items:center}.steps .step h2::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:9px;background:var(--wash);color:var(--soft);font-size:.95rem}
+.steps{display:flex;flex-direction:column;gap:34px;counter-reset:s}.step{display:flex;flex-direction:column;gap:14px;min-width:0}.steps .step{counter-increment:s}.steps .step h2{display:flex;gap:12px;align-items:center}.steps .step h2::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:9px;background:var(--wash);color:var(--soft);font-size:.95rem}
+.step .rich{display:flex;flex-direction:column;gap:12px}.step .rich>*+*{margin-top:0}
+.note,.eg,.tip{border-radius:12px;padding:14px 16px;font-size:.96rem;display:flex;flex-direction:column;gap:8px}
+.note{background:color-mix(in srgb,var(--pen) 7%,var(--sheet));border-left:3.5px solid var(--pen)}
+.eg{background:var(--sheet);border:1px solid var(--line);box-shadow:var(--sh1)}
+.tip{background:var(--amber-wash);border-left:3.5px solid var(--amber)}
+.note b:first-child,.eg b:first-child,.tip b:first-child{color:var(--ink)}
+.eg pre,.note pre,.tip pre{background:var(--wash)}
 .memos{background:var(--amber-wash);border-radius:var(--r);padding:20px 24px}.memos ul{margin:8px 0 0;padding-left:1.2em}.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
 /* 演示 */
