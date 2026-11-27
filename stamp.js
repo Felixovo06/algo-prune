@@ -1,7 +1,7 @@
 // 发布前运行：npm run stamp。给 CSS/JS 打内容版本号，避免浏览器新旧文件混用。
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
-const mods = ['store', 'question', 'feed', 'art', 'pretty', 'demos', 'algos', 'visitors', 'data/questions', 'data/more', 'data/codes', 'data/topics'].map(m => `js/${m}.js`);
+const mods = ['store', 'question', 'feed', 'art', 'pretty', 'demos', 'algos', 'visitors', 'data/questions', 'data/more', 'data/explain', 'data/exams', 'data/codes', 'data/topics'].map(m => `js/${m}.js`);
 const v = createHash('sha256').update([...mods, 'js/app.js', 'css/style.css'].map(f => readFileSync(f)).join('')).digest('hex').slice(0, 8);
 const map = JSON.stringify({ imports: Object.fromEntries(mods.map(m => [`./${m}`, `./${m}?v=${v}`])) });
 let s = readFileSync('index.html', 'utf8');

@@ -185,3 +185,14 @@ body.immersive .top{background:#0d1017;border-color:#ffffff1c;color-scheme:dark}
 @keyframes burst{from{transform:translate(-50%,-50%) scale(.4)}to{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) rotate(var(--r));opacity:0}}
 @keyframes pop{from{opacity:1;transform:translate(-50%,-50%) scale(.4)}40%{transform:translate(-50%,-50%) scale(1.1)}to{opacity:0;transform:translate(-50%,-110%) scale(1)}}@keyframes mix{30%{transform:rotate(-2deg) scale(.94);opacity:.5}65%{transform:rotate(2deg) scale(.96);opacity:.7}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01s!important;transition-duration:.01s!important}}
+
+/* 验收卷 */
+.exams{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
+.exam-card{display:flex;gap:18px;align-items:center;background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;color:inherit;text-decoration:none;box-shadow:var(--sh1);transition:transform .2s var(--ease),box-shadow .2s,border-color .2s}.exam-card:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:transparent}.exam-card:active{transform:scale(.985)}
+.ec-s{display:grid;place-items:center;width:72px;height:72px;flex:none;border-radius:18px;background:color-mix(in srgb,var(--pen) 12%,transparent);color:var(--pen);line-height:1.1;text-align:center}.ec-s b{font-size:1.6rem;font-variant-numeric:tabular-nums}.ec-s small{font-size:.72rem}
+.ec-t{display:flex;flex-direction:column;line-height:1.5;min-width:0}.ec-t b{font-size:1.08rem}.ec-t small{color:var(--soft);font-size:.86rem}
+.exam-intro{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:26px;display:flex;flex-direction:column;gap:14px;align-items:flex-start;max-width:720px;box-shadow:var(--sh1)}
+.bigscore{display:flex;align-items:baseline;gap:6px;color:var(--pen)}.bigscore b{font-size:4.2rem;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}.bigscore span{font-size:1.3rem;color:var(--soft)}
+.done p span{white-space:nowrap}.done p{flex-wrap:wrap;justify-content:center}
+.late{color:var(--red);font-weight:700}
+@media (max-width:720px){.nav a,.nav a[aria-current]{min-width:0;padding:4px 6px;font-size:.68rem}.nav .nav-feed,.nav .nav-feed[aria-current]{padding:6px 11px}}

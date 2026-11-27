@@ -1,4 +1,6 @@
 import { MORE } from './more.js';
+import { EXPLAIN } from './explain.js';
+import { EXAMS, EXAM_Q } from './exams.js';
 // 题库。type: choice 单选 | fill 填空（可自动判）| open 主观（自评）
 // a: choice=下标；fill=每空可接受答案；open=参考答案 HTML
 // any=填空不计顺序；same=与另一题相同，只在套卷里出现
@@ -14,6 +16,7 @@ export const SETS = [
   { id: 'nt', grp: 'note', name: '证明与代码', sub: '大题必背', note: '最优子结构和贪心选择的证明，经典算法代码' },
   { id: 'ex', grp: 'ex', name: '补充练习', sub: '自编', note: '按同样的题型补的练习' },
 ];
+export { EXAMS };
 export const GROUPS = { year: '往年卷', paper: '综合卷', bank: '题库', note: '证明与代码', ex: '补充练习' };
 export const sid = q => q.same || q.id;
 
@@ -231,5 +234,10 @@ c[i][j] = max(c[i-1][j], c[i][j-1])      i,j&gt;0 且 xᵢ ≠ yⱼ</code></pre>
 { id: 'ex-24', set: 'ex', no: '补充', t: ['bnb'], type: 'fill', any: true, q: '按活结点表的组织方式，分支限界法分为 ___ 式和 ___ 式两种。', a: [['队列', 'FIFO', '先进先出队列'], ['优先队列']], ex: '' },
 { id: 'ex-25', set: 'ex', no: '补充', t: ['bnb'], type: 'choice', q: '用优先队列式分支限界法解 0-1 背包（求最大值），活结点表用什么组织？优先级取什么？', opts: ['最小堆，当前重量', '最大堆，价值上界', '栈，当前价值', '普通队列，层数'], a: 1, ex: '<p>求最大 → 最大堆，上界大的先扩展。第一次取出叶子时就是最优解。</p>' },
 ];
-export const Q = [...BASE, ...MORE];
-export const CORE = Q.filter(q => !q.same);
+for (const e of EXAMS) SETS.push({ id: e.id, grp: 'exam', name: e.name, sub: `${e.mins} 分钟 · 100 分`, note: e.note });
+export const Q = [...BASE, ...MORE, ...EXAM_Q];
+for (const q of Q) if (!q.ex || !q.ex.replace(/<[^>]+>/g, '').trim()) q.ex = EXPLAIN[q.id] || '';
+const isExam = new Set(EXAMS.map(e => e.id));
+// CORE：日常刷题的题池。验收卷单独成模块，不进题池
+export const CORE = Q.filter(q => !q.same && !isExam.has(q.set));
+export const EXAM_SETS = isExam;

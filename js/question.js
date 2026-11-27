@@ -67,7 +67,7 @@ export function renderQ(q, { mode = 'instant', compact = false, index = 0, onDon
       if (objective && mode === 'instant') { const r = el.querySelectorAll('.opt')[q.a].getBoundingClientRect(); burst(r.right - 40, r.top + r.height / 2); }
       ans.append(h('p', 'ver ' + (objective ? 'ok' : 'no'), objective ? '答对了' : picked < 0 ? `未作答，答案 ${'ABCD'[q.a]}` : `答案是 ${'ABCD'[q.a]}`));
     } else if (q.type === 'fill') {
-      const r = checkFill(q, inputs.map(x => x.value)); objective = r.every(Boolean);
+      const r = checkFill(q, inputs.map(x => x.value)); objective = r.every(Boolean); el.frac = r.filter(Boolean).length / r.length;
       inputs.forEach((x, i) => { x.readOnly = true; x.classList.add(r[i] ? 'ok' : 'no'); });
       ans.append(h('p', 'ver ' + (objective ? 'ok' : 'no'), (objective ? '答对了' : '答案：' + q.a.map(a => a[0]).join('；'))));
     } else ans.append(h('div', 'rich', q.a));
@@ -79,7 +79,7 @@ export function renderQ(q, { mode = 'instant', compact = false, index = 0, onDon
       const s = h('div', 'self'); s.append(h('span', 'small soft', q.type === 'fill' ? '意思对也算对：' : '自评：'));
       for (const [v, c, t] of [['ok', 'g', '会了'], ['mid', 'm', '模糊'], ['no', 'b', '不会']]) {
         const b = h('button', 'btn ' + c, t); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
-        b.onclick = () => { [...s.querySelectorAll('button')].forEach(x => x.setAttribute('aria-pressed', x === b)); mark(v); };
+        b.onclick = () => { [...s.querySelectorAll('button')].forEach(x => x.setAttribute('aria-pressed', x === b)); el.selfed = true; mark(v); };
         s.append(b);
       }
       ans.append(s);

@@ -1,4 +1,4 @@
-import { Q, CORE, SETS, GROUPS, sid } from './data/questions.js';
+import { Q, CORE, SETS, GROUPS, EXAMS, sid } from './data/questions.js';
 import { TOPICS, TIERS } from './data/topics.js';
 import * as store from './store.js';
 import { renderQ, h } from './question.js';
@@ -33,7 +33,8 @@ function home() {
   const db = h('div', 'dk-b'); const fb = h('button', 'btn ghost', '换一张'); fb.type = 'button'; fb.onclick = flip; db.append(fb, link('#/feed', icon('feed') + '<span>进抖题</span>', 'btn hot'));
   pile.onclick = flip; deck.append(pile, db); hero.append(left, deck); main.append(hero);
   main.append(h('section', 'sec', `<div class="sec-h"><h2>知识点</h2><a href="#/learn">全部课程${icon('right')}</a></div><div class="covers rail">${TOPICS.map(t => cover(t, `#/learn/${t.id}`)).join('')}</div>`));
-  main.append(h('section', 'sec', `<div class="sec-h"><h2>套卷</h2><a href="#/sets">全部套卷${icon('right')}</a></div><div class="papers">${SETS.filter(x => x.id !== 'ex').map(paper).join('')}</div>`));
+  main.append(h('section', 'sec', `<div class="sec-h"><h2>套卷</h2><a href="#/sets">全部套卷${icon('right')}</a></div><div class="papers">${SETS.filter(x => !['ex', 'exam'].includes(x.grp)).map(paper).join('')}</div>`));
+  main.append(h('section', 'sec', `<div class="sec-h"><h2>验收卷</h2><a href="#/exams">题型分布${icon('right')}</a></div>${examCards()}`));
   const COLS = [...byGrp('year').map(s => [s.name, q => q.set === s.id]), ['综合卷', q => grp[q.set] === 'paper'], ['题库', q => grp[q.set] === 'bank']];
   const rows = TOPICS.map(t => COLS.map(c => Q.filter(q => q.t.includes(t.id) && c[1](q)).length)), mx = COLS.map((_, j) => Math.max(...rows.map(r => r[j])));
   main.append(h('section', 'sec', `<div class="sec-h"><h2>考频</h2></div><p class="soft small">颜色越深，这一列里考得越多。一题可能考多个知识点；往年规律，不保证今年照考。</p><div class="scroll"><table class="heat"><thead><tr><th>知识点</th>${COLS.map(c => `<th>${c[0]}</th>`).join('')}<th>已会</th></tr></thead><tbody>${TOPICS.map((t, i) => `<tr><th><a href="#/learn/${t.id}"><i ${tone(t.id)}></i>${t.name}</a>${tier(t)}</th>${rows[i].map((n, j) => `<td><span class="hc" style="--a:${n ? Math.round(14 + 66 * n / mx[j]) : 0}%"${n / mx[j] > .5 ? ' data-hi' : ''}>${n || ''}</span></td>`).join('')}<td>${bar(store.progress(ofTopic(t.id)))}</td></tr>`).join('')}</tbody></table></div>`));
@@ -60,30 +61,47 @@ function learn(id) {
 }
 
 /* 一题一页 + 答题卡 */
-function runner(qs, { exam = false, fresh = false } = {}) {
+/** 按分值算分：填空按答对的空数；解答题看自评（会了 1，模糊 0.5，不会 0） */
+const SEC = ['填空', '选择', '简答', '综合'], FACT = { ok: 1, mid: .5, no: 0 };
+function scoreOf(els, qs) {
+  const part = Object.fromEntries(SEC.map(k => [k, [0, 0]])); let got = 0, all = 0, wait = 0;
+  qs.forEach((q, k) => { const e = els[k], r = e?.result(), p = q.pts || 0, f = !r ? 0 : q.type === 'fill' && r === 'no' && !e.selfed ? e.frac || 0 : FACT[r]; if (q.type === 'open' && !r) wait++; got += p * f; all += p; const sec = SEC.find(x => q.no.startsWith(x)); if (sec) { part[sec][0] += p * f; part[sec][1] += p; } });
+  return { got: Math.round(got * 10) / 10, all, wait, part };
+}
+const recs = { get: () => { try { return JSON.parse(localStorage.getItem('prune.exams')) || {}; } catch { return {}; } }, put: (id, v) => { try { const r = recs.get(); r[id] = v; localStorage.setItem('prune.exams', JSON.stringify(r)); } catch { /* 忽略 */ } } };
+function runner(qs, { exam = false, fresh = false, mins = 0, onScore } = {}) {
   const g = h('div', 'run'), stage = h('div', 'run-stage'), prog = h('div', 'run-prog', '<b></b>'), side = h('aside', 'run-side'), sheet = h('div', 'card-grid'), bar = h('div', 'run-bar'), clock = h('span', 'num'), score = h('p', 'score');
   const mkb = (t, f, c = '') => { const b = h('button', 'btn ' + c, t); b.type = 'button'; b.onclick = f; return b; };
-  let i = 0, submitted = false, t0 = Date.now(), timer = 0; const els = [], touched = new Set();
+  let i = 0, submitted = false, t0 = Date.now(), timer = 0, secs = 0; const els = [], touched = new Set();
   const mark = k => { const b = sheet.children[k], e = els[k]; if (!b) return; const r = exam && !submitted ? (touched.has(k) ? 'sel' : '') : exam ? (e?.result() || '') : store.status(sid(qs[k])); b.className = r + (k === i ? ' cur' : ''); b.ariaLabel = `第 ${k + 1} 题${{ ok: '，已会', mid: '，模糊', no: '，不会', sel: '，已作答' }[r] || ''}`; };
-  const get = k => els[k] ||= (() => { const e = renderQ(qs[k], { mode: exam ? 'exam' : 'instant', index: k + 1, onDone: () => { mark(k); meter(); } }); const t = () => { if (exam && !submitted) { touched.add(k); mark(k); meter(); } }; e.addEventListener('input', t); e.addEventListener('click', ev => { if (ev.target.closest('.opt')) t(); }); return e; })();
+  const get = k => els[k] ||= (() => { const e = renderQ(qs[k], { mode: exam ? 'exam' : 'instant', index: k + 1, onDone: () => { mark(k); meter(); if (submitted) paint(); } }); const t = () => { if (exam && !submitted) { touched.add(k); mark(k); meter(); } }; e.addEventListener('input', t); e.addEventListener('click', ev => { if (ev.target.closest('.opt')) t(); }); return e; })();
   const meter = () => { const n = exam && !submitted ? touched.size : qs.filter((_, k) => els[k]?.result() || (!exam && store.status(sid(qs[k])))).length; prog.firstChild.style.width = n / qs.length * 100 + '%'; };
   const show = k => { if (k < 0) return; if (k >= qs.length) return finish(); const o = i; i = k; const e = get(k); stage.replaceChildren(e); e.classList.remove('in-l', 'in-r'); void e.offsetWidth; e.classList.add(k < o ? 'in-l' : 'in-r'); mark(o); mark(i); prev.disabled = !i; next.textContent = i === qs.length - 1 ? '完成' : '下一题'; next.disabled = exam && !submitted && i === qs.length - 1; pos.textContent = `${i + 1} / ${qs.length}`; meter(); if (main.contains(g) && g.getBoundingClientRect().top < 0) g.scrollIntoView(); };
   const finish = () => {
     const st = qs.map((_, k) => exam ? els[k]?.result() || '' : store.status(sid(qs[k]))), n = x => st.filter(v => v === x).length, p = { ok: n('ok'), done: st.filter(Boolean).length, all: qs.length };
-    const d = h('div', 'done', `${ring(p, 150, '已会')}<h2>${p.ok === p.all ? '全会了' : p.done === p.all ? '这一轮刷完了' : `还有 ${p.all - p.done} 题没做`}</h2><p><span class="st-ok">会 ${n('ok')}</span><span class="st-mid">模糊 ${n('mid')}</span><span class="st-no">不会 ${n('no')}</span></p>`), r = h('div', 'row');
+    const S = exam && submitted && hasPts ? scoreOf(els, qs) : null;
+    const d = h('div', 'done', S ? `<div class="bigscore"><b>${S.got}</b><span>/ ${S.all}</span></div><h2>${S.got >= 85 ? '验收通过，很稳' : S.got >= 60 ? '及格了，再补补弱项' : '还不够，先回去补知识点'}</h2><p>${SEC.filter(k => S.part[k][1]).map(k => `<span>${k} ${Math.round(S.part[k][0] * 10) / 10}/${S.part[k][1]}</span>`).join('')}</p>${S.wait ? `<p class="soft small">还有 ${S.wait} 道解答题没自评，自评后分数会更新</p>` : ''}` : `${ring(p, 150, '已会')}<h2>${p.ok === p.all ? '全会了' : p.done === p.all ? '这一轮刷完了' : `还有 ${p.all - p.done} 题没做`}</h2><p><span class="st-ok">会 ${n('ok')}</span><span class="st-mid">模糊 ${n('mid')}</span><span class="st-no">不会 ${n('no')}</span></p>`), r = h('div', 'row');
+    if (S) { r.append(mkb('看错的题', () => { const k = st.findIndex(v => v !== 'ok'); show(k < 0 ? 0 : k); }, 'pri'), mkb('重新考一次', () => location.reload())); d.append(r); stage.replaceChildren(d); pos.textContent = '成绩'; next.disabled = true; i = qs.length; prev.disabled = false; qs.forEach((_, k) => mark(k)); if (S.got >= 85) { const b = d.getBoundingClientRect(); burst(b.left + b.width / 2, b.top + 90); } return; }
     const bad = qs.filter((_, k) => ['no', 'mid'].includes(st[k])); if (bad.length) r.append(mkb(`只刷不会的 ${bad.length} 题`, () => swap(bad), 'pri')); const todo = qs.filter((_, k) => !st[k]); if (todo.length) r.append(mkb(`补做 ${todo.length} 题`, () => swap(todo))); r.append(mkb('从头再来', () => swap(qs))); d.append(r); stage.replaceChildren(d); pos.textContent = '完成'; next.disabled = true; i = qs.length; prev.disabled = false; qs.forEach((_, k) => mark(k)); if (p.ok === p.all) { const b = d.getBoundingClientRect(); burst(b.left + b.width / 2, b.top + 110); }
+  };
+  const hasPts = qs.some(q => q.pts);
+  const paint = () => {
+    if (!hasPts) { const ob = els.filter(e => e.q.type !== 'open'), ok = ob.filter(e => e.result() === 'ok').length; score.innerHTML = ob.length ? `客观题 ${ok} / ${ob.length}<small class="soft">解答题对照答案自评</small>` : '已交卷<small class="soft">对照答案自评</small>'; return; }
+    const S = scoreOf(els, qs); score.innerHTML = `<b class="num">${S.got}</b> / ${S.all} 分<small class="soft">${S.wait ? `还有 ${S.wait} 道解答题等你自评` : '已全部评分'}</small>`; onScore?.(S, secs);
   };
   const swap = list => { stop(); const n = runner(list, { fresh: true }); g.replaceWith(n.el); self.el = n.el; self.stop = n.stop; };
   const prev = mkb('上一题', () => show(i - 1)), next = mkb('下一题', () => show(i + 1), 'pri'), pos = h('span', 'num soft'), tog = mkb('答题卡', () => { const on = side.classList.toggle('on'); tog.setAttribute('aria-expanded', on); }, 'tog'); tog.setAttribute('aria-expanded', 'false');
   qs.forEach((_, k) => { const b = h('button', '', k + 1); b.type = 'button'; b.onclick = () => { show(k); side.classList.remove('on'); tog.setAttribute('aria-expanded', 'false'); }; sheet.append(b); });
   side.append(h('h3', '', '答题卡'), sheet, h('p', 'legend small soft', exam ? '<i class="sel"></i>已作答 <i></i>未作答' : '<i class="ok"></i>会 <i class="mid"></i>模糊 <i class="no"></i>不会 <i></i>没做'));
   if (exam) {
-    const tick = () => { const x = Math.floor((Date.now() - t0) / 1000); clock.textContent = `用时 ${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`; }; tick(); timer = setInterval(tick, 1000);
-    let armed = false; const sub = mkb('交卷', () => {
+    const mm = x => `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`, used = () => Math.floor((Date.now() - t0) / 1000);
+    const tick = () => { const x = used(); if (mins && !submitted) { const left = mins * 60 - x; clock.textContent = `剩余 ${mm(Math.max(0, left))}`; clock.classList.toggle('late', left <= 600); if (left <= 0) doSubmit(); } else clock.textContent = `用时 ${mm(x)}`; };
+    let armed = false; const doSubmit = () => { armed = true; sub.onclick(); };
+    const sub = mkb('交卷', () => {
       const left = qs.length - touched.size; if (left && !armed) { armed = true; sub.textContent = `还有 ${left} 题没写，再点交卷`; setTimeout(() => { armed = false; if (!submitted) sub.textContent = '交卷'; }, 4000); return; }
       submitted = true; clearInterval(timer); tick(); qs.forEach((_, k) => { get(k).reveal(); }); qs.forEach((_, k) => mark(k));
-      const ob = els.filter(e => e.q.type !== 'open'), ok = ob.filter(e => e.result() === 'ok').length; meter(); score.innerHTML = ob.length ? `客观题 ${ok} / ${ob.length}<small class="soft">解答题对照答案自评</small>` : '已交卷<small class="soft">对照答案自评</small>'; sub.remove(); side.querySelector('.legend').innerHTML = '<i class="ok"></i>会 <i class="mid"></i>模糊 <i class="no"></i>不会 <i></i>未自评'; side.classList.add('on'); tog.setAttribute('aria-expanded', 'true'); show(0);
-    }, 'pri'); side.append(clock, score, sub);
+      secs = used(); meter(); paint(); sub.remove(); side.querySelector('.legend').innerHTML = '<i class="ok"></i>会 <i class="mid"></i>模糊 <i class="no"></i>不会 <i></i>未自评'; side.classList.add('on'); tog.setAttribute('aria-expanded', 'true'); show(0);
+    }, 'pri'); side.append(clock, score, sub); tick(); timer = setInterval(tick, 1000);
   }
   const key = e => { if (e.target.matches?.('input,textarea') || e.metaKey || e.ctrlKey || e.altKey) return; if (e.key === 'ArrowRight') show(i + 1); else if (e.key === 'ArrowLeft') show(i - 1); else { const c = e.key.toLowerCase(), j = 'abcd'.indexOf(c) >= 0 ? 'abcd'.indexOf(c) : '1234'.indexOf(c); if (j >= 0 && c.length === 1) stage.querySelectorAll('.opt')[j]?.click(); } };
   addEventListener('keydown', key);
@@ -121,6 +139,23 @@ function set(id) {
 
 function feed() { cleanup = mountFeed(main); }
 
+/* 验收卷 */
+const fmtDate = t => { const d = new Date(t); return `${d.getMonth() + 1}月${d.getDate()}日`; };
+const examCards = () => { const R = recs.get(); return `<div class="exams">${EXAMS.map(e => { const r = R[e.id]; return `<a class="exam-card" href="#/exam/${e.id}"><span class="ec-s">${r ? `<b>${r.best}</b><small>最高分</small>` : '<b>—</b><small>未考</small>'}</span><span class="ec-t"><b>${e.name}</b><small>${e.note}</small><small>${r ? `最近一次 ${r.last} 分 · ${fmtDate(r.at)}` : `${e.mins} 分钟 · 100 分`}</small></span></a>`; }).join('')}</div>`; };
+function exams() {
+  main.append(head('验收卷', '学完以后用来检验：题都是新的，不在日常题池里。按往年卷的题型和分值出题，限时 120 分钟，交卷后自动算分。'));
+  main.append(h('div', '', examCards()));
+  const qs = Q.filter(q => q.set === EXAMS[0].id), cnt = k => qs.filter(q => q.no.startsWith(k)), rows = SEC.map(k => [k, cnt(k).length, cnt(k).reduce((a, q) => a + q.pts, 0)]);
+  main.append(h('section', 'sec', `<div class="sec-h"><h2>题型分布</h2></div><p class="soft small">参考 2021–2024 三套往年卷的题型和分值。每套都有一道 0-1 背包大题，它三年都考。</p><div class="tbl"><table class="grid"><tr><th>题型</th>${rows.map(r => `<th>${r[0]}</th>`).join('')}<th>合计</th></tr><tr><td>题数</td>${rows.map(r => `<td>${r[1]}</td>`).join('')}<td>${qs.length}</td></tr><tr><td>分值</td>${rows.map(r => `<td>${r[2]}</td>`).join('')}<td>${rows.reduce((a, r) => a + r[2], 0)}</td></tr></table></div>`));
+}
+function exam(id) {
+  const e = EXAMS.find(x => x.id === id); if (!e) return notFound(); const qs = Q.filter(q => q.set === id), r = recs.get()[id];
+  main.append(h('div', 'set-top', `<h1>${e.name}<small class="soft">${e.mins} 分钟 · 100 分 · ${qs.length} 题</small></h1>`));
+  const intro = h('div', 'exam-intro', `<p>${e.note}。开始后计时，过程中不显示答案，交卷后统一评分。解答题对照答案自评：「会了」得满分，「模糊」得一半。</p>${r ? `<p class="soft small">最高分 ${r.best}，最近一次 ${r.last} 分（${fmtDate(r.at)}）</p>` : ''}`);
+  const go = h('button', 'btn pri big', '开始考试'); go.type = 'button'; intro.append(go); main.append(intro);
+  go.onclick = () => { intro.remove(); const run = runner(qs, { exam: true, mins: e.mins, onScore: (S, secs) => { const old = recs.get()[id]; recs.put(id, { best: Math.max(S.got, old?.best ?? 0), last: S.got, at: Date.now(), secs }); } }); main.append(run.el); cleanup = () => run.stop(); };
+}
+
 /* 错题 */
 function wrong() {
   main.append(head('错题和收藏', '标记为“不会”“模糊”或收藏过的题。做对或自评“会了”之后会自动移出。'));
@@ -133,12 +168,12 @@ function wrong() {
 }
 function notFound() { main.append(head('没有这个页面', '链接可能写错了。')); main.append(link('#/', '回首页')); }
 
-const R = { '': home, learn, topics, topic, sets, set, feed, wrong };
+const R = { '': home, learn, topics, topic, sets, set, feed, wrong, exams, exam };
 function route() {
   if (location.hash && !location.hash.startsWith('#/')) return; // 跳转正文等普通锚点
   cleanup?.(); cleanup = null; const [p = '', id] = location.hash.replace(/^#\//, '').split('/'); main.replaceChildren(); (Object.hasOwn(R, p) ? R[p] : notFound)(id);
   if (['learn', 'topic', 'set'].includes(p) && id) last.set(`${p}/${id}`); main.classList.remove('enter'); void main.offsetWidth; main.classList.add('enter');
-  const nav = { topic: 'topics', set: 'sets' }[p] || p; document.querySelectorAll('[data-nav]').forEach(a => a.dataset.nav === nav ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
+  const nav = { topic: 'topics', set: 'sets', exam: 'exams' }[p] || p; document.querySelectorAll('[data-nav]').forEach(a => a.dataset.nav === nav ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
   const t = main.querySelector('h1')?.firstChild.textContent || '抖题'; document.title = p ? `${t} · 算法考试速成` : '算法考试速成'; scrollTo(0, 0);
 }
 addEventListener('hashchange', route);

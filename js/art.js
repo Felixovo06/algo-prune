@@ -30,6 +30,7 @@ const I = {
   sets: '<path d="M7 3h10l3 3v15H4V3z"/><path d="M8 10h8M8 14h8M8 18h5"/>',
   feed: '<path d="M8 5v14l11-7z" fill="currentColor"/>',
   wrong: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+  exam: '<path d="M9 3h6l1 2h3v16H5V5h3z"/><path d="m9 13 2 2 4-4"/>',
   star: '<path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/>',
   bulb: '<path d="M9 18h6M10 21h4"/><path d="M8.5 15a6 6 0 1 1 7 0c-.6.5-.9 1.2-1 2h-5c-.1-.8-.4-1.5-1-2z"/>',
   shuffle: '<path d="M3 7h3c5 0 6 10 11 10h4M3 17h3c1.700 0 2.900-1.200 4-2.800M14 9.800C15 8.200 16 7 18 7h3"/><path d="m18 4 3 3-3 3M18 14l3 3-3 3"/>',

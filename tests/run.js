@@ -50,5 +50,27 @@ const V = { host: 'felixovo06.github.io', webdriver: false, nocount: '', lastDay
 eq(plan(V), { visit: true, person: true }, 'first visit'); eq(plan({ ...V, lastDay: '2026-11-25', seen: '1' }), { visit: false, person: false }, 'same day'); eq(plan({ ...V, lastDay: '2026-11-24', seen: '1' }), { visit: true, person: false }, 'next day');
 for (const x of [{ host: 'localhost' }, { webdriver: true }, { nocount: '1' }]) eq(plan({ ...V, ...x }), { visit: false, person: false }, 'skip');
 eq(today(new Date(2026, 0, 5)), '2026-01-05', 'today');
+// 解析与验收卷
+const plain = h => h.replace(/<[^>]+>/g, '').trim();
+for (const q of Q) { ok(plain(q.ex || '').length >= 6, 'no ex ' + q.id); ok(!/原答案|原题|更正|存疑|纠错/.test(q.ex || ''), 'ex wording ' + q.id); }
+const { EXAMS, EXAM_Q } = await import('../js/data/exams.js');
+for (const e of EXAMS) {
+  const qs = Q.filter(q => q.set === e.id), sum = k => qs.filter(q => q.no.startsWith(k)).reduce((a, q) => a + q.pts, 0);
+  eq([sum('填空'), sum('选择'), sum('简答'), sum('综合'), qs.reduce((a, q) => a + q.pts, 0)], [20, 20, 15, 45, 100], 'exam pts ' + e.id);
+  ok(qs.every(q => q.pts > 0 && !CORE.includes(q)), 'exam pool ' + e.id);
+  ok(qs.filter(q => q.no.startsWith('综合')).some(q => q.t.includes('knapsack')), 'exam knapsack ' + e.id);
+}
+eq(EXAM_Q.length, Q.filter(q => q.set.startsWith('v')).length, 'exam q');
+const bnd = (x, w, v, C) => { const r = A.bound(x, w, v, C); return r === null ? null : Math.round(r * 100) / 100; };
+const pick = id => { const q = Q.find(x => x.id === id); return q.type === 'choice' ? q.opts[q.a] : q.a; };
+eq(pick('v1-c5'), String(bnd('1', [4, 5, 3], [12, 10, 6], 10)), 'v1-c5');
+eq(pick('v2-c7'), String(bnd('10', [3, 5, 4, 3], [18, 20, 14, 9], 12)), 'v2-c7');
+eq(pick('v2-c4'), '11', 'v2-c4'); eq(pick('v3-c4'), String((a => { let s = 0, b = 0; for (const x of a) { b = b > 0 ? b + x : x; s = Math.max(s, b); } return s; })([-2, 11, -4, 13, -5, -2])), 'v3-c4');
+for (const s of ['BDA', 'BCA']) ok(s.length === A.lcs('BADCBA', 'ABCDA').len && sub(s, 'BADCBA') && sub(s, 'ABCDA'), 'v2 lcs ' + s);
+for (const [w, v, C] of [[[2, 3, 4], [6, 12, 10], 6], [[5, 3, 4], [20, 9, 14], 8], [[4, 2, 3], [16, 10, 9], 6]]) { const s2 = A.sortItems(w, v); eq(A.backtrackTrace(s2.w, s2.v, C).best, brute(w, v, C), 'exam knap'); eq(A.bnbTrace(s2.w, s2.v, C).best, brute(w, v, C), 'exam bnb'); }
+eq(A.huffman([['a', 32], ['b', 9], ['c', 7], ['d', 21], ['e', 13], ['f', 18]]).cost, 16 + 29 + 39 + 61 + 100, 'v1 huff');
+{ const p = [10, 20, 5, 15, 30], f = (a, b) => a === b ? 0 : Math.min(...Array.from({ length: b - a }, (_, t) => f(a, a + t) + f(a + t + 1, b) + p[a - 1] * p[a + t] * p[b])); eq(A.matrixChain(p).best, f(1, 4), 'v3 chain'); }
+eq(A.dijkstra(5, [[1, 2, 4], [1, 3, 9], [1, 5, 15], [2, 3, 3], [2, 4, 8], [3, 4, 2], [3, 5, 10], [4, 5, 3]], 1).d.slice(2), [4, 7, 9, 12], 'v3 dij');
 console.log(`${n} checks, ${bad} failed; 题 ${Q.length}（去重 ${CORE.length}），知识点 ${TOPICS.length}`);
+console.log(`验收卷 ${EXAMS.length} 套 ${EXAM_Q.length} 题`);
 process.exit(bad ? 1 : 0);
